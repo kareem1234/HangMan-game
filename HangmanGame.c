@@ -18,7 +18,7 @@ void printHangman(int  bg);
 
 
 int main(int argc, char *argv[]){
-  if( argc == 1 ){
+	if( argc == 1 ){
 	// become the server
 		// create neccesary variables 
 		int  clientSocket;
@@ -278,3 +278,80 @@ void initCGuesses(int guesses[]){
 }
 
 void guesser(int ClientSocket, char *argv[]){
+	printf("you are now guessing\n");
+	char bGuesses[36];
+	int  blength = 0;
+	char buffer[30];
+	char response[1];
+	int badGuessesLeft = 6;
+	int t =1;
+	while(t == 1){
+		printf("would you like to guess the whole word ('y' or 'n')\n");
+		// tell the server if your guessing a word 
+		gets(response);
+		buffer[0] = response[0];
+		send(ClientSocket,buffer,sizeof(char),0);
+		if(response[0] == 'y'){
+			printf("enter a word to guess\n");
+			gets(buffer);
+			send(ClientSocket,buffer,sizeof(buffer),0);
+		}else{
+			printf("enter a leter to guess\n");
+			gets( buffer);
+			bGuesses[blength] = buffer[0];
+			blength+=1;
+			send(ClientSocket,buffer,sizeof(char),0);
+		}
+		int i=recv(ClientSocket,buffer,2*sizeof(char),0);
+		printf(" i is %d \n", i );
+		buffer[i] = 0;
+		printf("%c \n", buffer[0]);
+		if(buffer[0] == 'L'){
+			printf("you lost ...\n");
+			printf("asking server if they want to play again\n");
+			int i = recv(ClientSocket,buffer,sizeof(char),0);
+			buffer[i] = 0;
+			if(buffer[0] == 'n'){
+			printf("the server does not want to play again\n");
+			printf("you are no becoming the server ...\n");
+			close(ClientSocket);
+			char *argv[2];
+			argv[0] = "./a.out";
+			argv[1] = 0; 
+			execvp("./a.out",argv);
+
+			}else{
+			 printf("the server wants to play again\n");
+			 printf("restarting game ...\n");
+			 close(ClientSocket);
+			 execvp("./a.out",argv);
+
+			}
+		}else if(buffer[0] == 'W'){
+			printf("congrats you won the game\n");
+			printf("do you want to play again ('y' or 'n') \n");
+			scanf("%1s", buffer);
+			send(ClientSocket,buffer,sizeof(char),0);
+			if(buffer[0] == 'y'){
+				printf("restarting as server...\n");
+				close(ClientSocket);
+				char *argv[2];
+				argv[0] = "./a.out";
+				argv[1] = 0;
+				execvp("./a.out",argv);
+			}else{
+				printf("GoodBye! \n");
+				close(ClientSocket);
+				exit(0); 
+			}
+
+	       }else if(buffer[0] == 'N'){
+			badGuessesLeft = (int)buffer[1];
+			int i = recv(ClientSocket,buffer,sizeof(buffer),0);
+			buffer[i] = 0;
+			printf("client should be printing\n");
+			printReturnString(buffer);
+			printHangman(badGuessesLeft);
+		}	
+	}
+}
